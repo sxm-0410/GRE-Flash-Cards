@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Word } from '../types';
-import { ChevronRight, RotateCw } from 'lucide-react';
+import { RotateCw } from 'lucide-react';
 
 interface FlashcardProps {
   word: Word;
