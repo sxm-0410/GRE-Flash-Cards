@@ -1,73 +1,82 @@
-# React + TypeScript + Vite
+# 🦅 GREedy Words
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**The Ultimate Vocabulary Mastery Platform for GRE Candidates.**
 
-Currently, two official plugins are available:
+GREedy Words is a specialized vocabulary learning platform designed to make GRE preparation structured, interactive, and effective. By combining cognitive science principles like active recall and spaced repetition with a modern, high-fidelity user interface, we help students master the 1,000+ essential words needed for a top-tier Verbal score.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+🚀 **[View the Live Prototype](https://gre-vocabulary-flash-cards-fd1clvzuv.vercel.app)**
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 💡 The Core Philosophy
 
-## Expanding the ESLint configuration
+Our learning model is built on three essential pillars:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1.  **Daily Discipline** — A fixed daily challenge of 20 words to build habit and ensure long-term retention.
+2.  **Self-Directed Learning** — Curated word lists (High-Frequency 500, Barron's 333) for students to explore at their own pace.
+3.  **Active Recall** — Interactive MCQ assessments that force the brain to retrieve definitions rather than passively recognize them.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## ✨ Phase 1 Features (Live)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+The current prototype demonstrates the core learning loop designed for our B2B B2B pilot:
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+-   **Interactive MCQ Daily Challenge:** A 20-word session with multiple-choice questions. Answering reveals the word details and flips the card for full review.
+-   **3D Flashcard Interface:** Tactile, flipping cards showing part of speech, definitions, usage examples, synonyms, and antonyms.
+-   **Dynamic Dashboard:** Real-time tracking of streaks, mastered words, and XP progress.
+-   **Word List Browser:** Dual-view system allowing students to switch between focused **Flashcard Mode** and a comprehensive **Grid View**.
+-   **Smooth Transitions:** High-quality slide and flip animations for a professional "app-like" feel.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🛠️ Tech Stack
+
+Built with a modern, high-performance stack optimized for both web and future mobile expansion:
+
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React (Vite + TypeScript) |
+| **Styling** | Tailwind CSS v4 |
+| **Animations** | Framer Motion |
+| **Icons** | Lucide React |
+| **Routing** | React Router |
+| **Hosting** | Vercel |
+
+---
+
+## 🗺️ Roadmap
+
+### Phase 2: Personalization & Persistence
+- User Registration & Authentication (Supabase/Firebase).
+- Persistent Backend (PostgreSQL) for user-word state tracking.
+- Advanced Spaced Repetition (SM-2 Algorithm).
+- Instructor/Admin Dashboard for training centers.
+
+### Phase 3: Mobile & Gamification
+- React Native app for iOS & Android.
+- Push notification reminders.
+- Badge system and leaderboard.
+
+---
+
+## 🛠️ Local Development
+
+To run the project locally:
+
+1.  **Clone the repo:**
+    ```bash
+    git clone https://github.com/sxm-0410/GRE-Flash-Cards.git
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Start the development server:**
+    ```bash
+    npm run dev
+    ```
+
+---
+
+_Project managed and developed by [Sampath Bageyawadi](https://github.com/sxm-0410)._
