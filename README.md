@@ -4,11 +4,11 @@
 
 GREedy Words is a specialized vocabulary learning platform designed to make GRE preparation structured, interactive, and effective. By combining cognitive science principles like active recall and spaced repetition with a modern, high-fidelity user interface, we help students master the 1,000+ essential words needed for a top-tier Verbal score.
 
-🚀 **[View the Live Prototype](https://gre-vocabulary-flash-cards-fd1clvzuv.vercel.app)**
+**[View the Live Prototype](https://gre-vocabulary-flash-cards-fd1clvzuv.vercel.app)**
 
 ---
 
-## 💡 The Core Philosophy
+## The Core Philosophy
 
 Our learning model is built on three essential pillars:
 
