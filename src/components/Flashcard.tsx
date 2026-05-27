@@ -6,9 +6,10 @@ interface FlashcardProps {
   word: Word;
   isFlipped: boolean;
   onFlip: () => void;
+  hideFlipInstructions?: boolean;
 }
 
-export const Flashcard: React.FC<FlashcardProps> = ({ word, isFlipped, onFlip }) => {
+export const Flashcard: React.FC<FlashcardProps> = ({ word, isFlipped, onFlip, hideFlipInstructions }) => {
   return (
     <div className="w-full max-w-md mx-auto h-96 perspective-1000 group">
       <div
@@ -23,10 +24,12 @@ export const Flashcard: React.FC<FlashcardProps> = ({ word, isFlipped, onFlip })
             {word.partOfSpeech}
           </span>
           <h2 className="text-4xl font-bold text-gray-900 mb-2">{word.word}</h2>
-          <div className="mt-8 flex items-center text-gray-400 text-sm animate-pulse">
-            <RotateCw size={16} className="mr-2" />
-            Click to reveal definition
-          </div>
+          {!hideFlipInstructions && (
+            <div className="mt-8 flex items-center text-gray-400 text-sm animate-pulse">
+              <RotateCw size={16} className="mr-2" />
+              Click to reveal definition
+            </div>
+          )}
         </div>
 
         {/* Back */}
@@ -59,9 +62,11 @@ export const Flashcard: React.FC<FlashcardProps> = ({ word, isFlipped, onFlip })
             </div>
           </div>
 
-          <div className="mt-auto pt-6 flex justify-center text-gray-400 text-sm">
-            Click to flip back
-          </div>
+          {!hideFlipInstructions && (
+            <div className="mt-auto pt-6 flex justify-center text-gray-400 text-sm">
+              Click to flip back
+            </div>
+          )}
         </div>
       </div>
     </div>

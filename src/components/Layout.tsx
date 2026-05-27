@@ -1,6 +1,7 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, LayoutDashboard, Settings, Trophy, Menu, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { BookOpen, LayoutDashboard, Trophy, Menu, X, LogOut } from 'lucide-react';
+import { useAuth } from './AuthProvider';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,13 +10,19 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, user } = useAuth();
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Daily Challenge', href: '/challenge', icon: Trophy },
     { name: 'Word Lists', href: '/lists', icon: BookOpen },
-    { name: 'Admin', href: '/admin', icon: Settings },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
@@ -44,6 +51,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             );
           })}
         </nav>
+
+        {user && (
+          <div className="p-4 border-t border-gray-100">
+            <button
+              onClick={handleSignOut}
+              className="flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Sign Out
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Mobile Header */}
@@ -60,8 +79,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
         <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setIsMenuOpen(false)}>
-          <div className="bg-white w-64 h-full pt-20 px-4" onClick={(e) => e.stopPropagation()}>
-            <nav className="space-y-2">
+          <div className="bg-white w-64 h-full pt-20 px-4 flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <nav className="flex-1 space-y-2">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href;
@@ -82,6 +101,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 );
               })}
             </nav>
+            {user && (
+              <div className="py-4 border-t border-gray-100">
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="mr-3 h-5 w-5" />
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

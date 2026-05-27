@@ -30,6 +30,23 @@ The current prototype demonstrates the core learning loop designed for our B2B B
 
 ---
 
+## ⚙️ Environment Variables (Local Setup)
+
+Before running the application locally, you must connect it to a Supabase database.
+
+1. Create a new project on [Supabase](https://supabase.com/).
+2. Run the SQL scripts found in `supabase_schema.sql` and `seed_data.sql` in your Supabase SQL Editor.
+3. In your Supabase dashboard, go to **Authentication > Providers > Email** and turn **OFF** "Confirm email" (for testing purposes).
+4. Go to **Project Settings > API** to find your keys.
+5. Create a `.env` file in the root directory of this project and add your credentials:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+---
+
 ## 🛠️ Tech Stack
 
 Built with a modern, high-performance stack optimized for both web and future mobile expansion:
