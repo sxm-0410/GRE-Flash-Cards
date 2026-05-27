@@ -1,6 +1,6 @@
 **Document Type:** Product Feature Specification & Workflow Reference  
 **Audience:** Developer, Stakeholders, Training Center Partners  
-**Status:** Phase 1 Prototype Live (Deployed on Vercel)
+**Status:** Phase 2 MVP Live (Deployed on Vercel with Supabase Backend)
 
 ---
 
@@ -361,59 +361,57 @@ B2B batch-enrolled students receive an email invitation with a one-time setup li
 |Layer|Technology|Rationale|
 |---|---|---|
 |Web Frontend|React (Vite + TypeScript)|High performance, type safety, and fast development cycle.|
+|Backend & Auth|Supabase (PostgreSQL)|Provides instant Auth, Row Level Security, and a scalable relational database.|
 |Styling|Tailwind CSS v4|Modern utility-first styling with native CSS variable support.|
 |Animations|Framer Motion|Smooth 3D flips and slide transitions for a tactile feel.|
 |Icons|Lucide React|Consistent and high-quality iconography.|
 |Routing|React Router|Robust navigation for student and admin flows.|
 |Hosting|Vercel|Instant deployments and production-grade performance.|
-|Mobile (Phase 2)|React Native|Planned shared logic and components with web frontend.|
-|Backend|Node.js / FastAPI|Planned for Phase 2 data persistence.|
+|Mobile (Phase 3)|React Native|Planned shared logic and components with web frontend.|
 
 ---
 
-## 10. Phase 1 Prototype Scope & Status
+## 10. Phase 2 MVP Scope & Status
 
-The Phase 1 prototype is now live and demonstrates the core student learning loop for B2B pitches.
+The Phase 2 MVP is now live, completing the transition from a static prototype to a fully data-driven application using Supabase.
 
-**Completed in Phase 1:**
+**Completed in Phase 2:**
 
-- **Interactive Frontend:** Built with React, TypeScript, and Tailwind v4.
-- **Dynamic Dashboard:** Real-time stats, streak counters, and mastery progress visualization.
-- **MCQ Daily Challenge:** 20-word interactive quiz with 3D flashcards and full back/forward navigation.
-- **Word List Browser:** Dual-view interface (Flashcard vs Grid) for browsing the full word database.
-- **Smooth Animations:** Integrated slide and flip transitions using Framer Motion.
-- **Live Deployment:** Production build hosted on Vercel for stakeholder review.
-- **Mock Data Seeding:** 24 high-frequency words with full definitions, examples, and synonyms/antonyms.
+- **Backend Integration:** Replaced static mock data with a live Supabase PostgreSQL database.
+- **Authentication:** Implemented secure user registration and login flows with email validation and strict password requirements.
+- **Protected Routing:** Established secure access control, redirecting guests to the landing/auth pages.
+- **Dynamic Dashboard:** Live tracking of user streaks, XP, active lists, and word mastery progress directly from the database.
+- **Strict Daily Challenge Logic:** Implemented backend session tracking to enforce a strict "once-per-day" completion limit for the 20-word challenge, automatically updating the user's streak upon completion.
+- **Expanded Content:** Seeded the database with 72 distinct, high-quality GRE words categorized into three curated lists (High-Frequency 500, Barron's Essential 333, Advanced GRE Vocabulary).
+- **Public Vocabulary Access:** Configured Row Level Security (RLS) policies to allow guests to browse vocabulary lists as a marketing/teaser tool.
 
-**Remaining for MVP (Phase 2):**
+**Remaining for B2B Readiness:**
 
-- User registration, login, and JWT authentication.
-- Backend database (PostgreSQL) for persistent user-word state tracking.
-- Teacher dashboard wireframes/prototype.
-- B2B batch enrollment logic.
-- Real spaced repetition scheduling (moving beyond the current session-only state).
+- Teacher dashboard UI implementation (Read-only analytics).
+- B2B batch enrollment logic (CSV upload / organization linking).
+- Full Spaced Repetition scheduling algorithm (moving beyond session tracking to calculate `next_appearance_date`).
 
 ---
 
 ## 11. Post-MVP Roadmap
 
-**Phase 2 — B2C Public Launch**
+**Phase 3 — B2C Public Launch**
 
 - Payment gateway integration (Razorpay for Indian market)
-- Public-facing landing page with pricing
+- Public-facing pricing page
 - Additional quiz modes (fill in the blank, synonym/antonym match)
 - Personal word bank
 - Badge and XP system fully implemented
 - Email notifications for streak reminders
 
-**Phase 3 — Mobile**
+**Phase 4 — Mobile**
 
 - React Native app for iOS and Android
 - Push notifications for daily challenge
 - Home screen widget — word of the day
 - Offline flashcard mode (cached word sets)
 
-**Phase 4 — Intelligence Layer**
+**Phase 5 — Intelligence Layer**
 
 - Upgrade spaced repetition to SM-2 algorithm based on accumulated user performance data
 - Adaptive daily challenge difficulty based on individual mastery velocity
@@ -421,4 +419,4 @@ The Phase 1 prototype is now live and demonstrates the core student learning loo
 
 ---
 
-_Document last updated: May 26, 2026_
+_Document last updated: May 27, 2026_
