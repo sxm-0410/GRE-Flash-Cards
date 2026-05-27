@@ -111,6 +111,9 @@ Words cycle back into the daily challenge based on how the student performed. Th
 **Streak System:**  
 Completing the daily challenge increments the student's streak counter. Missing a day resets the streak to zero. The streak is prominently displayed on the home dashboard to encourage consistency.
 
+**Rate Limiting (UTC Reset):**  
+To prevent cramming and enforce daily habit-building, the challenge is strictly limited to one completion per day. This rate limiting operates on **UTC calendar days**. The challenge resets globally at exactly **00:00 UTC** (e.g., 5:30 AM IST). Once completed, the dashboard displays a "Completed" badge, and the challenge route is locked until the next UTC midnight.
+
 **Access by Tier:**  
 Both free and premium users have access to the daily challenge. The word pool for free users is drawn from the two unlocked word lists only.
 

@@ -9,7 +9,7 @@ All notable changes to the **GRE Vocabulary Flash Cards** project will be docume
 - **Dedicated Auth Page (`/auth`)**: Implemented a responsive, full-screen authentication page featuring a 3D flip animation between Sign In and Sign Up states.
 - **Landing Page (`/`)**: Added a marketing-focused landing page with a hero section, feature highlights, and clear calls to action.
 - **Dynamic Stats Tracking**: Dashboard stats (Streak, Words Mastered, Total XP, Active Lists) are now live-linked to the user's `profiles` and `user_word_states` tables.
-- **Daily Challenge Limits**: Implemented strict once-per-day completion logic. If a user completes a daily challenge, the Dashboard updates with a "Completed" badge, and the `/challenge` route actively blocks subsequent attempts with a blurred overlay.
+- **Daily Challenge Limits**: Implemented strict once-per-day completion logic. The rate limiting is tied to **UTC calendar days**, meaning the challenge resets globally at exactly 00:00 UTC (e.g., 5:30 AM IST). If a user completes a daily challenge, the Dashboard updates with a "Completed" badge, and the `/challenge` route actively blocks subsequent attempts for that UTC day with a blurred overlay.
 - **Advanced Auth Validation**: Added real-time client-side password validation (Capital letter, Special Character, No Hyphens/Spaces, 6+ characters) and improved email typo detection (e.g., catching `@gma.com`).
 - **Data Expansion**: Seeded the database with 72 distinct GRE words split evenly across three distinct lists (High-Frequency, Barron's 333, Advanced).
 - **Glassmorphism Overlay**: Clicking a word in the Word Lists "Grid View" now opens a blurred, centered overlay displaying that word's interactive flashcard.
