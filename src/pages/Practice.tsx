@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Flashcard } from './Flashcard';
-import { Trophy, ArrowLeft, ArrowRight, Check, X, Loader2, AlertCircle } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useWordLists } from '../hooks/useWordLists';
 import { useWords } from '../hooks/useWords';
+import { Flashcard } from '../components/Flashcard';
+import { Trophy, ArrowLeft, ArrowRight, RotateCcw, Check, X, Loader2, AlertCircle, Play } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
-import { useAuth } from './AuthProvider';
+import { useAuth } from '../components/AuthProvider';
 
 interface Question {
   wordId: string;
@@ -14,54 +14,36 @@ interface Question {
   userAnswer: string | null;
 }
 
-export const DailyChallenge: React.FC = () => {
-  const navigate = useNavigate();
+export const Practice: React.FC = () => {
   const { user } = useAuth();
-  const { words: allWords, loading: wordsLoading } = useWords();
+  const { lists, loading: listsLoading, error: listsError } = useWordLists();
   
+  // Selection State
+  const [selectedListId, setSelectedListId] = useState<string | 'all' | null>(null);
+  const [isPracticing, setIsPracticing] = useState(false);
+
+  // Fetch words based on selection
+  // Note: If 'all' is selected, useWords(undefined) fetches all words.
+  const { words: activeWords, loading: wordsLoading } = useWords(selectedListId === 'all' ? undefined : (selectedListId || undefined));
+
+  // Practice State
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [saving, setSaving] = useState(false);
-  const [alreadyAttempted, setAlreadyAttempted] = useState(false);
-  const [checkingAttempt, setCheckingAttempt] = useState(true);
 
-  // Check if today's challenge is already attempted
-  useEffect(() => {
-    if (user) {
-      const checkAttempt = async () => {
-        try {
-          const today = new Date().toISOString().split('T')[0];
-          const { count } = await supabase
-            .from('sessions')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('type', 'daily')
-            .gte('created_at', `${today}T00:00:00Z`);
-          
-          setAlreadyAttempted((count || 0) > 0);
-        } catch (err) {
-          console.error('Error checking challenge attempt:', err);
-        } finally {
-          setCheckingAttempt(false);
-        }
-      };
-      checkAttempt();
-    }
-  }, [user]);
-
-  // Generate 20 random words for the challenge from the full list
-  const challengeWords = useMemo(() => {
-    if (!allWords || allWords.length === 0) return [];
-    return [...allWords].sort(() => 0.5 - Math.random()).slice(0, 20);
-  }, [allWords]);
+  // Generate up to 20 random words for the practice session
+  const practiceWords = useMemo(() => {
+    if (!activeWords || activeWords.length === 0 || !isPracticing) return [];
+    return [...activeWords].sort(() => 0.5 - Math.random()).slice(0, 20);
+  }, [activeWords, isPracticing]);
 
   useEffect(() => {
-    if (challengeWords.length > 0 && !alreadyAttempted) {
-      const generatedQuestions = challengeWords.map((word) => {
-        const distractors = allWords
+    if (practiceWords.length > 0 && isPracticing) {
+      const generatedQuestions = practiceWords.map((word) => {
+        const distractors = activeWords
           .filter(w => w.id !== word.id)
           .sort(() => 0.5 - Math.random())
           .slice(0, 2)
@@ -78,10 +60,26 @@ export const DailyChallenge: React.FC = () => {
       });
       setQuestions(generatedQuestions);
     }
-  }, [challengeWords, allWords, alreadyAttempted]);
+  }, [practiceWords, activeWords, isPracticing]);
 
-  const currentWord = challengeWords[currentIndex];
+  const currentWord = practiceWords[currentIndex];
   const currentQuestion = questions[currentIndex];
+
+  const handleStartPractice = (listId: string | 'all') => {
+    setSelectedListId(listId);
+    setIsPracticing(true);
+    setIsFinished(false);
+    setCurrentIndex(0);
+    setQuestions([]);
+  };
+
+  const resetPractice = () => {
+    setIsPracticing(false);
+    setSelectedListId(null);
+    setIsFinished(false);
+    setCurrentIndex(0);
+    setQuestions([]);
+  };
 
   const handleOptionClick = (option: string) => {
     if (currentQuestion.userAnswer !== null) return;
@@ -93,7 +91,7 @@ export const DailyChallenge: React.FC = () => {
   };
 
   const handleNext = async () => {
-    if (currentIndex < challengeWords.length - 1) {
+    if (currentIndex < practiceWords.length - 1) {
       setDirection(1);
       setIsFlipped(false);
       setCurrentIndex(currentIndex + 1);
@@ -103,57 +101,42 @@ export const DailyChallenge: React.FC = () => {
     }
   };
 
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setDirection(-1);
+      setIsFlipped(false);
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
   const saveSession = async () => {
-    if (!user || alreadyAttempted) return;
+    if (!user) return;
     setSaving(true);
     try {
       const correctCount = questions.filter(q => q.userAnswer === q.correctAnswer).length;
       
-      // 1. Record the session
-      const { error: sessionError } = await supabase.from('sessions').insert({
+      // Record as a 'quiz' session so it doesn't affect the daily challenge limit
+      await supabase.from('sessions').insert({
         user_id: user.id,
-        type: 'daily',
+        type: 'quiz',
         score: correctCount,
         total_questions: questions.length
       });
 
-      if (sessionError) {
-        console.error('Failed to save session:', sessionError);
-        alert('Database Error (Sessions): ' + sessionError.message);
-        throw sessionError;
-      }
-
-      // 2. Update profile streak/xp
-      const { data: profile, error: profileFetchError } = await supabase.from('profiles').select('streak, xp').eq('id', user.id).single();
+      // Update XP only (do not update streak or last_active_date for practice)
+      const { data: profile } = await supabase.from('profiles').select('xp').eq('id', user.id).single();
       
-      if (profileFetchError) {
-        console.error('Failed to fetch profile:', profileFetchError);
-        // Continue anyway, maybe it's the first time
-      }
-      
-      const { error: profileUpdateError } = await supabase.from('profiles').update({
-        streak: (profile?.streak || 0) + 1,
-        xp: (profile?.xp || 0) + (correctCount * 10),
-        last_active_date: new Date().toISOString().split('T')[0]
+      await supabase.from('profiles').update({
+        xp: (profile?.xp || 0) + (correctCount * 5) // Slightly less XP for practice
       }).eq('id', user.id);
 
-      if (profileUpdateError) {
-        console.error('Failed to update profile:', profileUpdateError);
-        alert('Database Error (Profiles): ' + profileUpdateError.message);
-        throw profileUpdateError;
-      }
-
-      // 3. Update individual word mastery states
+      // Mastery Algorithm Update
       const wordIds = questions.map(q => q.wordId);
-      const { data: existingStates, error: fetchStatesError } = await supabase
+      const { data: existingStates } = await supabase
         .from('user_word_states')
         .select('*')
         .eq('user_id', user.id)
         .in('word_id', wordIds);
-
-      if (fetchStatesError) {
-        console.error('Failed to fetch existing word states:', fetchStatesError);
-      }
 
       const stateMap = new Map();
       if (existingStates) {
@@ -168,7 +151,6 @@ export const DailyChallenge: React.FC = () => {
         let state = existing ? existing.mastery_state : 'Unseen';
         const lastTested = existing ? existing.last_tested_date : null;
         
-        // Mastery State Machine Logic
         if (isCorrect) {
           if (state === 'Unseen' || state === 'Seen') {
             state = 'Familiar';
@@ -178,7 +160,6 @@ export const DailyChallenge: React.FC = () => {
             state = 'Mastered';
           }
         } else {
-          // Penalty for getting it wrong
           state = 'Seen'; 
         }
 
@@ -193,92 +174,106 @@ export const DailyChallenge: React.FC = () => {
         };
       });
 
-      const { error: upsertError } = await supabase
-        .from('user_word_states')
-        .upsert(wordUpserts);
-
-      if (upsertError) {
-        console.error('Failed to update word states:', upsertError);
-        alert('Database Error (Word States): ' + upsertError.message);
-      }
+      await supabase.from('user_word_states').upsert(wordUpserts);
 
     } catch (err) {
-      console.error('Error saving session:', err);
+      console.error('Error saving practice session:', err);
     } finally {
       setSaving(false);
     }
   };
 
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setDirection(-1);
-      setIsFlipped(false);
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
   const variants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 500 : -500,
-      opacity: 0,
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1,
-    },
-    exit: (direction: number) => ({
-      zIndex: 0,
-      x: direction < 0 ? 500 : -500,
-      opacity: 0,
-    }),
+    enter: (direction: number) => ({ x: direction > 0 ? 500 : -500, opacity: 0 }),
+    center: { zIndex: 1, x: 0, opacity: 1 },
+    exit: (direction: number) => ({ zIndex: 0, x: direction < 0 ? 500 : -500, opacity: 0 }),
   };
 
-  if (wordsLoading || checkingAttempt || (challengeWords.length > 0 && !alreadyAttempted && questions.length === 0)) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <Loader2 className="h-10 w-10 text-indigo-600 animate-spin mb-4" />
-        <p className="text-gray-500 font-medium">Preparing your daily challenge...</p>
-      </div>
-    );
-  }
-
-  if (alreadyAttempted) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50/50 backdrop-blur-md">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-3xl shadow-2xl p-12 border border-gray-100 max-w-lg w-full text-center"
-        >
-          <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Trophy className="text-amber-600 w-10 h-10" />
-          </div>
-          <h2 className="text-2xl font-extrabold text-gray-900 mb-4">Challenge Already Completed</h2>
-          <p className="text-gray-600 mb-8 text-lg">
-            You have already attempted today's challenge, check again tomorrow for more!
-          </p>
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all flex items-center justify-center"
-          >
-            <span>Back to Dashboard</span>
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (challengeWords.length === 0) {
-     return (
-        <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm max-w-2xl mx-auto">
-           <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-           <h2 className="text-2xl font-bold text-gray-900 mb-2">No words available</h2>
-           <p className="text-gray-600 mb-6">Please seed the database with words to start the challenge.</p>
-           <Link to="/" className="text-indigo-600 font-bold hover:underline">Back to Dashboard</Link>
+  // --- SELECTION VIEW ---
+  if (!isPracticing) {
+    if (listsLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 min-h-[400px]">
+          <Loader2 className="h-10 w-10 text-indigo-600 animate-spin mb-4" />
+          <p className="text-gray-500 font-medium">Loading practice options...</p>
         </div>
-     );
+      );
+    }
+
+    if (listsError) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Failed to load lists</h3>
+          <p className="text-gray-600 max-w-sm">{listsError}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="max-w-4xl mx-auto py-8 px-4">
+        <div className="mb-12 text-center">
+          <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Practice Area</h2>
+          <p className="text-gray-600 text-lg">Select a list to start an unlimited practice session. Practice earns you 5 XP per correct answer but does not affect your daily streak.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* All Lists Option */}
+          <motion.div 
+            whileHover={{ y: -4 }}
+            onClick={() => handleStartPractice('all')}
+            className="bg-indigo-600 p-8 rounded-3xl shadow-md border border-indigo-700 hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between text-white"
+          >
+             <div>
+                <div className="bg-white/20 w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
+                   <Play className="text-white h-6 w-6" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2">Global Practice</h3>
+                <p className="text-indigo-100 mb-6">A mixed quiz drawing from every word available in the database.</p>
+             </div>
+             <div className="flex items-center text-sm font-bold tracking-widest uppercase opacity-90 group-hover:opacity-100 transition-opacity">
+                Start Global Quiz <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+             </div>
+          </motion.div>
+
+          {lists.map((list) => (
+            <motion.div 
+              key={list.id}
+              whileHover={{ y: -4 }}
+              onClick={() => handleStartPractice(list.id)}
+              className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:border-indigo-300 hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                    list.difficulty === 'Foundational' ? 'bg-green-100 text-green-700' :
+                    list.difficulty === 'Intermediate' ? 'bg-blue-100 text-blue-700' :
+                    'bg-purple-100 text-purple-700'
+                  }`}>
+                    {list.difficulty}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors mb-2">{list.name}</h3>
+                <p className="text-sm text-gray-500 mb-6">Focus your practice specifically on the {list.word_count} words in this curated list.</p>
+              </div>
+              <div className="flex items-center text-indigo-600 text-sm font-bold tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                Start Practice <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // --- PRACTICE VIEW ---
+  if (wordsLoading || questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 min-h-[400px]">
+        <Loader2 className="h-10 w-10 text-indigo-600 animate-spin mb-4" />
+        <p className="text-gray-500 font-medium">Preparing practice session...</p>
+      </div>
+    );
   }
 
   if (isFinished) {
@@ -292,11 +287,11 @@ export const DailyChallenge: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100"
         >
-          <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Trophy className="text-yellow-600 w-10 h-10" />
+          <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Trophy className="text-indigo-600 w-10 h-10" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Challenge Complete!</h2>
-          <p className="text-gray-600 mb-8">You've completed the MCQ challenge for today.</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Practice Complete!</h2>
+          <p className="text-gray-600 mb-8">You earned +{correctCount * 5} XP from this session.</p>
           
           <div className="grid grid-cols-2 gap-4 md:gap-6 mb-10">
             <div className="bg-green-50 p-6 rounded-2xl border border-green-100">
@@ -311,10 +306,17 @@ export const DailyChallenge: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
-              onClick={() => navigate('/dashboard')}
+              onClick={resetPractice}
+              className="flex items-center justify-center px-8 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+            >
+              Back to Selection
+            </button>
+            <button 
+              onClick={() => handleStartPractice(selectedListId!)}
               className="flex items-center justify-center px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
             >
-              Back to Dashboard
+              <RotateCcw className="mr-2 h-5 w-5" />
+              Practice Again
             </button>
           </div>
         </motion.div>
@@ -336,26 +338,34 @@ export const DailyChallenge: React.FC = () => {
           Previous
         </button>
         <div className="text-center">
-          <p className="text-sm font-bold text-indigo-600 uppercase tracking-widest mb-1">Daily Challenge</p>
+          <p className="text-sm font-bold text-indigo-600 uppercase tracking-widest mb-1">Practice Mode</p>
           <div className="flex items-center space-x-3">
             <div className="w-32 md:w-48 bg-gray-200 rounded-full h-2 overflow-hidden">
               <motion.div 
                 className="bg-indigo-600 h-2 rounded-full" 
                 initial={false}
-                animate={{ width: `${((currentIndex + 1) / challengeWords.length) * 100}%` }}
+                animate={{ width: `${((currentIndex + 1) / practiceWords.length) * 100}%` }}
                 transition={{ duration: 0.5 }}
               />
             </div>
-            <span className="text-sm font-bold text-gray-700">{currentIndex + 1}/20</span>
+            <span className="text-sm font-bold text-gray-700">{currentIndex + 1}/{practiceWords.length}</span>
           </div>
         </div>
-        <button
-          onClick={handleNext}
-          className="flex items-center px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-50"
-        >
-          {currentIndex === challengeWords.length - 1 ? 'Finish' : 'Next'}
-          <ArrowRight className="ml-2 h-5 w-5" />
-        </button>
+        <div className="flex items-center space-x-2">
+           <button
+             onClick={resetPractice}
+             className="px-4 py-2 rounded-lg font-medium text-gray-500 hover:bg-gray-50 text-sm hidden md:block border border-transparent hover:border-gray-200"
+           >
+             Exit
+           </button>
+           <button
+             onClick={handleNext}
+             className="flex items-center px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-50"
+           >
+             {currentIndex === practiceWords.length - 1 ? 'Finish' : 'Next'}
+             <ArrowRight className="ml-2 h-5 w-5" />
+           </button>
+        </div>
       </div>
 
       <div className="relative py-4 h-[440px] overflow-hidden">
@@ -442,7 +452,7 @@ export const DailyChallenge: React.FC = () => {
           >
             {saving ? <Loader2 className="animate-spin h-5 w-5" /> : (
               <>
-                <span>{currentIndex === challengeWords.length - 1 ? 'Finish Challenge' : 'Next Word'}</span>
+                <span>{currentIndex === practiceWords.length - 1 ? 'Finish Practice' : 'Next Word'}</span>
                 <ArrowRight size={20} />
               </>
             )}

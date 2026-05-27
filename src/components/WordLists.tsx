@@ -300,15 +300,34 @@ export const WordLists: React.FC = () => {
                   key={word.id} 
                   whileHover={{ y: -2 }}
                   onClick={() => setDetailedWord(word)}
-                  className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-indigo-200 hover:shadow-lg transition-all cursor-pointer group"
+                  className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-indigo-200 hover:shadow-lg transition-all cursor-pointer group flex flex-col overflow-hidden"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{word.word}</h3>
-                    <span className="text-[10px] font-bold px-2 py-1 bg-gray-50 text-gray-400 rounded-lg uppercase tracking-wider group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
-                      {word.partOfSpeech}
-                    </span>
+                  <div className="flex justify-between items-start mb-4 gap-3">
+                    <h3 
+                      className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors break-words flex-1 min-w-0" 
+                      style={{ hyphens: 'auto', WebkitHyphens: 'auto' }}
+                      lang="en"
+                    >
+                      {word.word}
+                    </h3>
+                    
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0 w-[60px]">
+                      <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider w-full text-center ${
+                        word.masteryState === 'Mastered' ? 'bg-green-100 text-green-700' :
+                        word.masteryState === 'Learned' ? 'bg-blue-100 text-blue-700' :
+                        word.masteryState === 'Familiar' ? 'bg-indigo-100 text-indigo-700' :
+                        word.masteryState === 'Seen' ? 'bg-orange-100 text-orange-700' :
+                        'bg-gray-100 text-gray-500'
+                      }`}>
+                        {word.masteryState || 'Unseen'}
+                      </span>
+
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 bg-gray-50 text-gray-400 rounded uppercase tracking-wider group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors w-full text-center truncate">
+                        {word.partOfSpeech}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-gray-600 text-sm line-clamp-3 mb-6 leading-relaxed">{word.definition}</p>
+                  <p className="text-gray-600 text-sm line-clamp-3 mb-6 leading-relaxed flex-1">{word.definition}</p>
                   <div className="flex items-center text-xs text-indigo-600 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1">
                     View Details <ArrowRight size={14} className="ml-1.5" />
                   </div>

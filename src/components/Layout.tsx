@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, LayoutDashboard, Trophy, Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
@@ -10,18 +10,18 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const { signOut, user } = useAuth();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Daily Challenge', href: '/challenge', icon: Trophy },
+    { name: 'Practice', href: '/practice', icon: BookOpen },
     { name: 'Word Lists', href: '/lists', icon: BookOpen },
   ];
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    window.location.href = '/';
   };
 
   return (

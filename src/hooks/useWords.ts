@@ -50,6 +50,25 @@ export const useWords = (listId?: string) => {
 
         if (fetchError) throw fetchError;
 
+        // Fetch user session to get user ID
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        
+        // Fetch user's word states if logged in and we have words
+        const userStatesMap = new Map();
+        if (userId && data && data.length > 0) {
+          const wordIds = data.map((w: any) => w.id);
+          const { data: states, error: statesError } = await supabase
+            .from('user_word_states')
+            .select('word_id, mastery_state')
+            .eq('user_id', userId)
+            .in('word_id', wordIds);
+            
+          if (!statesError && states) {
+            states.forEach(s => userStatesMap.set(s.word_id, s.mastery_state));
+          }
+        }
+
         const transformedWords: Word[] = (data || []).map((w: any) => ({
           id: w.id,
           word: w.word,
@@ -59,7 +78,7 @@ export const useWords = (listId?: string) => {
           synonym: w.synonym,
           antonym: w.antonym,
           difficulty: w.difficulty,
-          masteryState: 'Unseen'
+          masteryState: userStatesMap.get(w.id) || 'Unseen'
         }));
 
         setWords(transformedWords);

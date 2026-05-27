@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { DailyChallenge } from './components/DailyChallenge';
 import { WordLists } from './components/WordLists';
@@ -6,10 +6,12 @@ import { useAuth } from './components/AuthProvider';
 import { AuthPage } from './pages/AuthPage';
 import { LandingPage } from './pages/LandingPage';
 import { Dashboard } from './pages/Dashboard';
+import { Practice } from './pages/Practice';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   
   if (loading) {
     return (
@@ -20,7 +22,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
   
   if (!user) {
-    return <Navigate to="/auth" />;
+    return <Navigate to={`/auth?redirectTo=${encodeURIComponent(location.pathname)}`} />;
   }
   
   return <Layout>{children}</Layout>;
@@ -44,6 +46,12 @@ function App() {
         <Route path="/challenge" element={
           <ProtectedRoute>
             <DailyChallenge />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/practice" element={
+          <ProtectedRoute>
+            <Practice />
           </ProtectedRoute>
         } />
         

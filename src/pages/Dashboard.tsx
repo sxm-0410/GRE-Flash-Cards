@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
-import { useWords } from '../hooks/useWords';
 import { supabase } from '../lib/supabase';
-import { Trophy, BookOpen, Star, TrendingUp, ArrowRight, Sparkles } from 'lucide-react';
+import { Trophy, BookOpen, Star, TrendingUp, ArrowRight, Sparkles, Info, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { words } = useWords();
   const [profile, setProfile] = useState<any>(null);
   const [masteredCount, setMasteredCount] = useState(0);
   const [challengeCompleted, setChallengeCompleted] = useState(false);
   const [masteryData, setMasteryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showMasteryInfo, setShowMasteryInfo] = useState(false);
+  const [showAllRecent, setShowAllRecent] = useState(false);
+
+  const [recentWords, setRecentWords] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -21,7 +24,7 @@ export const Dashboard: React.FC = () => {
         try {
           setLoading(true);
           
-          // 1. Fetch profile
+          // ... 1-4 remain same ...
           const { data: profileData } = await supabase
             .from('profiles')
             .select('*')
@@ -29,21 +32,15 @@ export const Dashboard: React.FC = () => {
             .single();
           setProfile(profileData);
 
-          // 2. Check if today's challenge is done
           const today = new Date().toISOString().split('T')[0];
-          const { count: challengeCount, error: challengeError } = await supabase
+          const { count: challengeCount } = await supabase
             .from('sessions')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user.id)
             .eq('type', 'daily')
             .gte('created_at', `${today}T00:00:00Z`);
-            
-          if (challengeError) {
-            console.error('Error checking challenge count:', challengeError);
-          }
           setChallengeCompleted((challengeCount || 0) > 0);
 
-          // 3. Fetch mastered count globally
           const { count: totalMastered } = await supabase
             .from('user_word_states')
             .select('*', { count: 'exact', head: true })
@@ -51,9 +48,7 @@ export const Dashboard: React.FC = () => {
             .in('mastery_state', ['Learned', 'Mastered']);
           setMasteredCount(totalMastered || 0);
 
-          // 4. Fetch Mastery Progress per List
           const { data: lists } = await supabase.from('word_lists').select('*');
-          
           if (lists) {
             const masteryResults = await Promise.all(lists.map(async (list) => {
               const { count: totalInList } = await supabase
@@ -76,14 +71,36 @@ export const Dashboard: React.FC = () => {
                 .in('mastery_state', ['Learned', 'Mastered']);
 
               const percentage = totalInList ? Math.round(((masteredInList || 0) / totalInList) * 100) : 0;
-              
-              return {
-                name: list.name,
-                percentage,
-                total: totalInList || 0
-              };
+              return { name: list.name, percentage, total: totalInList || 0 };
             }));
             setMasteryData(masteryResults);
+          }
+
+          // 5. Fetch Actual Recent Words (Up to 50)
+          const { data: recentStates } = await supabase
+            .from('user_word_states')
+            .select('word_id, mastery_state, last_tested_date, times_seen')
+            .eq('user_id', user.id)
+            .order('last_tested_date', { ascending: false })
+            .order('times_seen', { ascending: false })
+            .limit(50);
+
+          if (recentStates && recentStates.length > 0) {
+            const wordIds = recentStates.map(s => s.word_id);
+            const { data: wordsData } = await supabase
+              .from('words')
+              .select('*')
+              .in('id', wordIds);
+            
+            if (wordsData) {
+              // Combine word data with mastery state and sort to match the recent order
+              const combinedWords = recentStates.map(state => {
+                const word = wordsData.find(w => w.id === state.word_id);
+                return { ...word, masteryState: state.mastery_state };
+              }).filter(w => w.word); // filter out any potential undefined
+              
+              setRecentWords(combinedWords);
+            }
           }
 
         } catch (err) {
@@ -132,7 +149,7 @@ export const Dashboard: React.FC = () => {
     <div className="space-y-8">
       <div>
         <h2 className="text-3xl font-bold text-gray-900">
-          Welcome back, {user?.email?.split('@')[0] || 'Student'}!
+          Welcome back, {profile?.first_name ? `${profile.first_name} ${profile.last_name}`.trim() : user?.email?.split('@')[0] || 'Student'}!
         </h2>
         <p className="text-gray-600">
           You're on a roll. Keep up the daily discipline.
@@ -188,7 +205,9 @@ export const Dashboard: React.FC = () => {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-gray-900">Recent Words</h3>
-              <button onClick={() => navigate('/lists')} className="text-sm text-indigo-600 font-bold hover:underline">View All</button>
+              {recentWords.length > 0 && (
+                <button onClick={() => setShowAllRecent(true)} className="text-sm text-indigo-600 font-bold hover:underline">View All</button>
+              )}
             </div>
             <div className="space-y-4">
               {loading ? (
@@ -197,34 +216,87 @@ export const Dashboard: React.FC = () => {
                     <div key={i} className="h-14 bg-gray-50 rounded-lg animate-pulse" />
                   ))}
                 </div>
-              ) : words.length > 0 ? (
-                words.slice(0, 5).map((word) => (
-                  <div key={word.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-200">
-                    <div>
-                      <p className="font-bold text-gray-900">{word.word}</p>
-                      <p className="text-sm text-gray-500 italic">{word.partOfSpeech}</p>
+              ) : recentWords.length > 0 ? (
+                recentWords.slice(0, 5).map((word) => (
+                  <div key={word.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-200 group gap-3 overflow-hidden">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline space-x-2">
+                        <p className="font-bold text-gray-900 truncate">{word.word}</p>
+                        <p className="text-xs text-gray-400 italic truncate">{word.partOfSpeech}</p>
+                      </div>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">{word.definition}</p>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      word.difficulty === 'Foundational' ? 'bg-green-100 text-green-700' :
-                      word.difficulty === 'Intermediate' ? 'bg-blue-100 text-blue-700' :
-                      'bg-purple-100 text-purple-700'
-                    }`}>
-                      {word.difficulty}
-                    </span>
+                    
+                    <div className="flex-shrink-0">
+                      <span className={`inline-flex items-center justify-center px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider min-w-[60px] text-center ${
+                        word.masteryState === 'Mastered' ? 'bg-green-100 text-green-700' :
+                        word.masteryState === 'Learned' ? 'bg-blue-100 text-blue-700' :
+                        word.masteryState === 'Familiar' ? 'bg-indigo-100 text-indigo-700' :
+                        word.masteryState === 'Seen' ? 'bg-orange-100 text-orange-700' :
+                        'bg-gray-100 text-gray-500'
+                      }`}>
+                        {word.masteryState || 'Unseen'}
+                      </span>
+                    </div>
                   </div>
                 ))
               ) : (
-                <p className="text-center py-8 text-gray-500 italic">No words found. Start exploring!</p>
+                <div className="text-center py-8">
+                  <p className="text-gray-500 italic mb-2">No words studied yet.</p>
+                  <p className="text-xs text-indigo-600 font-medium">Complete a daily challenge!</p>
+                </div>
               )}
             </div>
           </div>
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-lg font-bold text-gray-900 mb-6">Mastery Progress</h3>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative">
+            <div className="flex items-center space-x-2 mb-6">
+              <h3 className="text-lg font-bold text-gray-900">Mastery Progress</h3>
+              <button 
+                onClick={() => setShowMasteryInfo(true)}
+                className="text-gray-400 hover:text-indigo-600 transition-colors"
+                title="How does mastery work?"
+              >
+                <Info size={18} />
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {showMasteryInfo && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute inset-0 z-10 bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full"
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-gray-900 flex items-center">
+                      <Star size={16} className="text-yellow-500 mr-2" /> How Mastery Works
+                    </h4>
+                    <button onClick={() => setShowMasteryInfo(false)} className="text-gray-400 hover:text-gray-700">
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <div className="space-y-3 overflow-y-auto text-sm text-gray-600 custom-scrollbar pr-2 flex-1 pb-2">
+                    <p><strong className="text-gray-900">Unseen (0%):</strong> The default state.</p>
+                    <p><strong className="text-gray-900">Seen (0%):</strong> You viewed the flashcard but haven't been tested on it or you got it wrong.</p>
+                    <p><strong className="text-gray-900">Familiar (0%):</strong> You got it right in a quiz once.</p>
+                    <p className="bg-green-50 p-2 rounded border border-green-100 text-green-800">
+                      <strong className="text-green-900">Learned (Counts):</strong> You got it right in a quiz twice on <em>different days</em>.
+                    </p>
+                    <p className="bg-indigo-50 p-2 rounded border border-indigo-100 text-indigo-800">
+                      <strong className="text-indigo-900">Mastered (Counts):</strong> You got it right in a quiz three times across <em>different days</em>.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="space-y-8">
               {loading ? (
+
                  <div className="space-y-8">
                     {[...Array(3)].map((_, i) => (
                       <div key={i} className="animate-pulse">
@@ -262,6 +334,66 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* View All Recent Words Modal */}
+      <AnimatePresence>
+        {showAllRecent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md"
+            onClick={() => setShowAllRecent(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-2xl w-full max-h-[80vh] flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white z-10">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Recent Words</h2>
+                  <p className="text-gray-500 text-sm mt-1">Your last {recentWords.length} practiced words.</p>
+                </div>
+                <button 
+                  onClick={() => setShowAllRecent(false)} 
+                  className="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition-colors flex-shrink-0"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="overflow-y-auto p-6 space-y-3 custom-scrollbar">
+                {recentWords.map(word => (
+                   <div key={word.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-indigo-200 transition-colors gap-4 group">
+                     <div className="flex-1 min-w-0">
+                       <div className="flex items-baseline space-x-2">
+                         <p className="font-bold text-gray-900 text-lg truncate">{word.word}</p>
+                         <p className="text-xs text-gray-500 italic truncate">{word.partOfSpeech}</p>
+                       </div>
+                       <p className="text-sm text-gray-600 line-clamp-2 mt-1 leading-relaxed">{word.definition}</p>
+                     </div>
+                     <div className="flex-shrink-0">
+                        <span className={`inline-flex items-center justify-center px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider min-w-[60px] text-center ${
+                          word.masteryState === 'Mastered' ? 'bg-green-100 text-green-700' :
+                          word.masteryState === 'Learned' ? 'bg-blue-100 text-blue-700' :
+                          word.masteryState === 'Familiar' ? 'bg-indigo-100 text-indigo-700' :
+                          word.masteryState === 'Seen' ? 'bg-orange-100 text-orange-700' :
+                          'bg-gray-100 text-gray-500'
+                        }`}>
+                          {word.masteryState || 'Unseen'}
+                        </span>
+                     </div>
+                   </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

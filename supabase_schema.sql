@@ -4,6 +4,8 @@ CREATE TABLE profiles (
   role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'admin')),
   is_premium BOOLEAN DEFAULT FALSE,
   email TEXT,
+  first_name TEXT,
+  last_name TEXT,
   plain_text_password TEXT,
   streak INTEGER DEFAULT 0,
   xp INTEGER DEFAULT 0,
@@ -50,6 +52,7 @@ CREATE TABLE user_word_states (
   correct_count INTEGER DEFAULT 0,
   incorrect_count INTEGER DEFAULT 0,
   next_appearance_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  last_tested_date DATE,
   is_bookmarked BOOLEAN DEFAULT FALSE,
   PRIMARY KEY (user_id, word_id)
 );

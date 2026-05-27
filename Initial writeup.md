@@ -261,20 +261,19 @@ The teacher dashboard is a read-only analytics interface available exclusively i
 
 ---
 
-## 7. Spaced Repetition Logic
+## 7. Spaced Repetition & Mastery Logic
 
-The platform uses a simplified spaced repetition model suited to the GRE preparation timeline (typically 2–6 months). A full SM-2 implementation is not used in the initial version; instead, a rule-based scheduling system is applied.
+The platform uses a strict, day-gated state machine to ensure genuine spaced repetition rather than short-term cramming. Words progress through the following mastery states based on quiz and daily challenge performance:
 
-|Student Action|Next Appearance in Daily Challenge|
-|---|---|
-|Marked "I know this"|After 7 days|
-|Marked "I don't know this"|After 4 days|
-|Skipped (session closed mid-way)|After 2 days|
-|Manually marked as "Hard"|Every day until correct 3 consecutive times|
-|Answered incorrectly in a quiz|Added to Needs Review pool; appears in next daily challenge|
-|Mastered (quiz correct 3x)|Removed from active rotation; can still be accessed via lists|
+|State|Meaning|Advancement Criteria|
+|---|---|---|
+|**Unseen**|Not yet encountered|Default starting state.|
+|**Seen**|Failed in a quiz|The user answered the word incorrectly. Drops back to this state from any higher state if failed.|
+|**Familiar**|Correct 1x|The user answered the word correctly in a quiz for the first time.|
+|**Learned**|Correct 2x (Spaced)|The user answered the word correctly in a quiz on a **different calendar day** (UTC) than when it became Familiar.|
+|**Mastered**|Correct 3x (Spaced)|The user answered the word correctly in a quiz on a **different calendar day** (UTC) than when it became Learned.|
 
-Words in a student's Needs Review pool take priority in the daily challenge queue. If the pool exceeds 20 words, the daily challenge is drawn entirely from Needs Review until the pool is cleared.
+**Progress Tracking:** Only words that reach the **Learned** or **Mastered** state contribute to the user's progress percentage for a given word list.
 
 ---
 
@@ -381,10 +380,12 @@ The Phase 2 MVP is now live, completing the transition from a static prototype t
 **Completed in Phase 2:**
 
 - **Backend Integration:** Replaced static mock data with a live Supabase PostgreSQL database.
-- **Authentication:** Implemented secure user registration and login flows with email validation and strict password requirements.
-- **Protected Routing:** Established secure access control, redirecting guests to the landing/auth pages.
-- **Dynamic Dashboard:** Live tracking of user streaks, XP, active lists, and word mastery progress directly from the database.
-- **Strict Daily Challenge Logic:** Implemented backend session tracking to enforce a strict "once-per-day" completion limit for the 20-word challenge, automatically updating the user's streak upon completion.
+- **Authentication:** Implemented secure user registration and login flows with email validation, strict password requirements, and session persistence controls.
+- **Protected Routing:** Established secure access control with automatic URL redirection for unauthenticated guests.
+- **Dynamic Dashboard:** Live tracking of user streaks, XP, active lists, and recent words (with definitions) directly from the database.
+- **Strict Daily Challenge Logic:** Implemented backend session tracking to enforce a strict "once-per-day" completion limit based on UTC time, automatically updating the user's streak upon completion.
+- **Practice Mode:** Added an unmetered practice area for users to drill specific lists or take global quizzes to earn XP without affecting their daily streak.
+- **Spaced Repetition Mastery:** Integrated a day-gated mastery algorithm (Unseen -> Familiar -> Learned -> Mastered) that updates dynamically across all UI views.
 - **Expanded Content:** Seeded the database with 72 distinct, high-quality GRE words categorized into three curated lists (High-Frequency 500, Barron's Essential 333, Advanced GRE Vocabulary).
 - **Public Vocabulary Access:** Configured Row Level Security (RLS) policies to allow guests to browse vocabulary lists as a marketing/teaser tool.
 
@@ -392,7 +393,6 @@ The Phase 2 MVP is now live, completing the transition from a static prototype t
 
 - Teacher dashboard UI implementation (Read-only analytics).
 - B2B batch enrollment logic (CSV upload / organization linking).
-- Full Spaced Repetition scheduling algorithm (moving beyond session tracking to calculate `next_appearance_date`).
 
 ---
 
@@ -422,4 +422,4 @@ The Phase 2 MVP is now live, completing the transition from a static prototype t
 
 ---
 
-_Document last updated: May 27, 2026_
+_Document last updated: May 28, 2026_

@@ -2,29 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../components/AuthProvider';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, ArrowLeft, Loader2, Sparkles, ChevronLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, ArrowRight, ArrowLeft, Loader2, Sparkles, ChevronLeft, User as UserIcon } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [keepMeSignedIn, setKeepMeSignedIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+
+  const redirectTo = searchParams.get('redirectTo') || '/dashboard';
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) navigate('/dashboard');
-  }, [user, navigate]);
+    if (user) navigate(redirectTo);
+  }, [user, navigate, redirectTo]);
 
   const validateEmail = (email: string) => {
-    // Basic regex for format
     const basicRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!basicRe.test(email)) return false;
 
-    // Specific check for typos in common domains
     const domain = email.split('@')[1].toLowerCase();
     const commonTypos: { [key: string]: string } = {
       'gma.com': 'gmail.com',
@@ -58,6 +62,12 @@ export const AuthPage: React.FC = () => {
     }
 
     if (!isLogin) {
+      if (!firstName.trim() || !lastName.trim()) {
+        setError("Please enter your full name.");
+        setLoading(false);
+        return;
+      }
+      
       const criteria = getPasswordCriteria(password);
       const unmet = criteria.find(c => !c.met);
       if (unmet) {
@@ -69,27 +79,43 @@ export const AuthPage: React.FC = () => {
 
     try {
       if (isLogin) {
+        if (keepMeSignedIn) {
+          localStorage.setItem('keepMeSignedIn', 'true');
+        } else {
+          localStorage.removeItem('keepMeSignedIn');
+        }
+
         const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
         if (authError) throw authError;
-        navigate('/dashboard');
+        navigate(redirectTo);
       } else {
-        const { data, error: authError } = await supabase.auth.signUp({ email, password });
+        const { data, error: authError } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+            }
+          }
+        });
         if (authError) throw authError;
         
         if (data.user) {
-          // Storing credentials in public.profiles for testing as requested
-          // Note: This only works if 'Confirm Email' is OFF in Supabase
           if (data.session) {
+            // Update profile with names (and testing credentials)
             await supabase
               .from('profiles')
               .update({ 
+                first_name: firstName,
+                last_name: lastName,
                 email: email, 
                 plain_text_password: password 
               })
               .eq('id', data.user.id);
-            navigate('/dashboard');
+            navigate(redirectTo);
           } else {
-            setError("Sign up successful! Please check your email to confirm your account before logging in. (Or disable 'Confirm Email' in Supabase settings to skip this step).");
+            setError("Sign up successful! Please check your email to confirm your account before logging in.");
           }
         }
       }
@@ -104,7 +130,6 @@ export const AuthPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 relative">
-      {/* Go Back Button */}
       <button 
         onClick={() => navigate('/')}
         className="absolute top-8 left-8 flex items-center space-x-2 text-gray-500 hover:text-gray-900 transition-colors font-semibold group"
@@ -130,7 +155,6 @@ export const AuthPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5 flex-1">
-              {/* ... (email/password fields remain same) ... */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 ml-1">Email Address</label>
                 <div className="relative">
@@ -159,6 +183,19 @@ export const AuthPage: React.FC = () => {
                     required
                   />
                 </div>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  id="keep-signed-in"
+                  type="checkbox"
+                  checked={keepMeSignedIn}
+                  onChange={(e) => setKeepMeSignedIn(e.target.checked)}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label htmlFor="keep-signed-in" className="ml-2 block text-sm text-gray-700">
+                  Keep me signed in
+                </label>
               </div>
 
               {error && <p className="text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 leading-relaxed">{error}</p>}
@@ -199,6 +236,37 @@ export const AuthPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 flex-1">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700 ml-1">First Name</label>
+                  <div className="relative">
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input 
+                      type="text" 
+                      placeholder="John"
+                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all text-sm"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700 ml-1">Last Name</label>
+                  <div className="relative">
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input 
+                      type="text" 
+                      placeholder="Doe"
+                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all text-sm"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-gray-700 ml-1">Email Address</label>
                 <div className="relative">
@@ -275,3 +343,4 @@ export const AuthPage: React.FC = () => {
     </div>
   );
 };
+

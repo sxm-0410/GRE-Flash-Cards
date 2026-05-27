@@ -17,24 +17,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check active sessions
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      // Check if user explicitly asked to be kept signed in
+      const keepMeSignedIn = localStorage.getItem('keepMeSignedIn') === 'true';
+      
+      // sessionStorage is cleared when the tab/window is closed. 
+      // If we don't have a tab session, and they didn't ask to be kept signed in, we sign them out.
+      const hasTabSession = sessionStorage.getItem('tabSessionActive') === 'true';
+
+      if (!keepMeSignedIn && !hasTabSession) {
+        // They closed the browser and didn't want to stay signed in. Clear it out.
+        await supabase.auth.signOut();
+      }
+
+      // Mark this tab as active for the duration of this window
+      sessionStorage.setItem('tabSessionActive', 'true');
+
+      // Now check the actual supabase session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (mounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      if (mounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
+    localStorage.removeItem('keepMeSignedIn');
     await supabase.auth.signOut();
   };
 
@@ -52,3 +81,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

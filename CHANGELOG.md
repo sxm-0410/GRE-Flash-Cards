@@ -2,6 +2,28 @@
 
 All notable changes to the **GRE Vocabulary Flash Cards** project will be documented in this file.
 
+## [2026-05-28] - Practice Mode, Advanced Auth, & Mastery Polish
+
+### Added
+- **Global Practice Mode (`/practice`)**: Introduced a new, unmetered practice tab allowing users to drill a specific word list or test themselves globally across the entire database. Practice sessions grant 5 XP per correct answer but do not affect the daily streak.
+- **Spaced Repetition Mastery Algorithm**: 
+  - Implemented the core state machine for word mastery in both Daily Challenge and Practice modes.
+  - Words now progress through states: `Unseen` -> `Seen` (incorrect) -> `Familiar` (1 correct) -> `Learned` (2 correct on different days) -> `Mastered` (3 correct on different days).
+- **Mastery UI Tooltip**: Added a clickable info icon (`ⓘ`) to the Dashboard's Mastery Progress section that explains the state machine rules to the user.
+- **"View All" Recent Words Modal**: Clicking "View All" on the Dashboard now opens a scrollable, glassmorphism modal displaying the user's last 50 tested words, complete with definitions and current mastery states.
+- **"Keep me signed in" Logic**: Added session persistence controls. If a user unchecks "Keep me signed in" during login, the application uses strict `sessionStorage` and forcefully clears the authentication state when the browser tab is closed.
+- **Profile Personalization**: The sign-up form now captures `first_name` and `last_name`. The Dashboard greets the user by name if available.
+- **Auto-Redirect System**: If an unauthenticated user attempts to visit a protected route (like `/dashboard`), the URL is captured (`?redirectTo=...`) and the user is seamlessly routed back to their intended destination after logging in.
+
+### Changed
+- **Mastery UI Redesign**: Replaced the initial concept of colored dot indicators with refined, ultra-compact text badges (`text-[9px]`, uppercase, wide tracking) that provide clear, immediate state feedback without relying on hover states.
+- **Layout Robustness**: Applied CSS `hyphens: auto`, `break-words`, and strict column widths to the Word Lists Grid View and Recent Words blocks to ensure long vocabulary words (e.g., "Anachronistic") wrap cleanly without breaking the badge layout.
+- **Recent Words Query**: Refactored the Dashboard "Recent Words" block to accurately fetch the user's actual testing history from `user_word_states`, rather than random words. It now also displays brief definition snippets inline.
+- **Sign Out Flow**: Modified the `Layout` component's sign-out button to execute a hard window reload (`window.location.href = '/'`) to ensure all React state is wiped and the user is returned to the public Landing Page.
+
+### Fixed
+- **Word Lists Data Sync**: Updated the `useWords` hook on the Word Lists page to explicitly cross-reference the user's ID with the database, ensuring the Grid View accurately reflects the user's live mastery states rather than defaulting to `Unseen`.
+
 ## [2026-05-27] - Major Refactor & Supabase Integration
 
 ### Added
