@@ -1,0 +1,95 @@
+# GREedy Words: Comprehensive Frontend Aesthetic & Workflow Profile
+
+This document provides a detailed mapping of the application's user journey and the visual decisions that define its premium, academic-meets-modern aesthetic.
+
+---
+
+## I. THE CORE WORKFLOW JOURNEY
+
+### 1. The Landing Page (The Hook)
+*   **Workflow:** User arrives at the root URL. They see the value proposition, explore features, and are funneled toward "Sign Up" or "Sign In."
+*   **Aesthetics:**
+    *   **Hero Section:** High-impact typography with a vibrant Indigo-to-Purple gradient clip (#4f46e5 to #9333ea). Uses `tracking-tight` for a modern, compressed feel.
+    *   **Navigation:** A sticky, pure-white header with a subtle bottom border (`border-gray-100`). The logo is a minimalist Indigo square with a white 'G'.
+    *   **Feature Cards:** "Hyper-rounded" corners (`rounded-3xl`). Icons (Trophy, Book, Star) are housed in soft-colored containers (Indigo-100, Purple-100, Orange-100) to distinguish categories without being loud.
+    *   **Primary CTA:** Uses "Night Mode" contrast (bg-gray-900) to stand out against the light theme. Includes a scaling hover effect (`hover:scale-105`) and heavy shadow (`shadow-xl`) to feel tactile.
+
+### 2. Authentication (The Gateway)
+*   **Workflow:** User navigates to `/auth`. They toggle between Login and Sign-up.
+*   **Aesthetics:**
+    *   **3D Card Mechanic:** The login and signup forms are two sides of a single physical card. Switching between them triggers a 600ms spring-based 3D flip animation using `perspective-1000` and `preserve-3d`.
+    *   **Tactile Inputs:** Fields use a subtle gray backdrop (`bg-gray-50`) that transitions to white with a vibrant Indigo-500 ring on focus.
+    *   **Password Criteria Box:** A specialized Gray-50 container using "micro-typography" (`text-[10px]`, bold, `tracking-widest`). Status indicators use "Binary Color Logic": Green-100/600 for met requirements, Gray-200 for unmet.
+    *   **Background:** A minimalist `bg-gray-50` that provides enough contrast to make the white auth card "pop."
+
+### 3. Global Layout & Navigation (The Persistent Frame)
+*   **Workflow:** Once authenticated, all protected pages are wrapped in a persistent Layout component that handles navigation.
+*   **Aesthetics:**
+    *   **Desktop Sidebar:** A fixed 64-width white sidebar (`border-r border-gray-200`). Navigation items use clear icon-text pairings. Active states are highlighted with a soft background (`bg-indigo-50`) and bold text (`text-indigo-700`), while inactive states remain a subtle gray (`text-gray-600 hover:bg-gray-50`). The Sign Out action is distinctly styled with `text-red-600 hover:bg-red-50` to warn the user.
+    *   **Mobile Header & Overlay:** A sticky top header (`border-b`, `z-50`) with a hamburger menu. Toggling the menu reveals a dark semi-transparent overlay (`bg-black bg-opacity-50`) and a slide-in white menu panel, ensuring focus on navigation.
+
+### 4. The Dashboard (The Central Hub)
+*   **Workflow:** Post-login home. Shows progress, the daily challenge entry, and recent activity.
+*   **Aesthetics:**
+    *   **Stats Grid:** Four modular cards with soft-colored icon backgrounds (Amber-100, Yellow-100, Green-100, Blue-100).
+    *   **The "Hero" Challenge Card:** A high-contrast call-to-action (bg-indigo-600). It features absolute-positioned, rotated icons (Trophy/Sparkles) with low opacity to create depth. It transforms into a "Success State" (bg-green-600) once the challenge is complete.
+    *   **Recent Words List:** Compact row layout. Each word is paired with a specific "Mastery Badge". A "View All" modal uses a `backdrop-blur-md` overlay with a `rounded-3xl` card for extended lists.
+    *   **Mastery Progress:** Slim, rounded progress bars (`bg-gray-100` track, `bg-indigo-600` fill) that animate width over 1000ms. An Info Modal uses `backdrop-blur-md` to explain mastery definitions.
+    *   **Pro Tip Card:** Uses a subtle gradient (`bg-gradient-to-br from-indigo-50 to-white`) to break the solid white pattern and draw attention to helpful advice.
+
+### 5. Daily Challenge & Practice (The Mastery Loop)
+*   **Workflow:** 20-word MCQ sessions. Selection screen (Practice) -> Flashcard Quiz -> Completion Summary.
+*   **Aesthetics:**
+    *   **Selection View (Practice Only):** Features a distinct "Global Practice" card (`bg-indigo-600 text-white`) alongside standard list cards to differentiate the unlimited quiz mode.
+    *   **Navigation Bar:** Minimalist "Previous" and "Next" controls. A central Indigo progress bar tracks completion percentage.
+    *   **The Flashcard (Centerpiece):** Uses a realistic 3D flip. 
+        *   **Front:** High-density typography (`text-4xl`) with part-of-speech badges. 
+        *   **Back:** Reveals structured data: Semantic color-coding for Synonyms (Green-600) and Antonyms (Red-600).
+    *   **MCQ Feedback System:** 
+        *   *Neutral:* White/Gray-100 border, hover states elevate the border to `border-indigo-500`.
+        *   *Correct:* Green-50 background and Green-500 border.
+        *   *Incorrect:* Red-50 background and Red-500 border.
+        *   *Others:* Opacity-50 to dim non-relevant options once an answer is chosen.
+    *   **Transitions:** Entire question sets slide left/right using Framer Motion (`popLayout`), mimicking the movement of a physical card deck.
+    *   **Completion Summary State:** Post-quiz, the user is presented with a heavily elevated (`shadow-xl`) `rounded-3xl` card. It features a central Trophy icon and visually distinct stat boxes for Correct (`bg-green-50 text-green-700`) and Incorrect (`bg-red-50 text-red-700`) answers.
+
+### 6. Word Lists (The Library)
+*   **Workflow:** Selection of curated sets (Foundational, Intermediate, Advanced).
+*   **Aesthetics:**
+    *   **Empty States:** If no lists exist, a clear `bg-amber-50` warning box with a dashed border provides guidance.
+    *   **Grid View:** 2-column layout of cards. Hovering lifts the card (`-translate-y-2`) and deepens the shadow.
+    *   **Difficulty Badges:** Foundational (Green), Intermediate (Blue), Advanced (Purple).
+    *   **View Toggles:** A pill-shaped switcher in the header to toggle between "Study" (Flashcard Focus) and "Grid" (Information Density). Active states use `bg-indigo-600 text-white shadow-md`.
+    *   **Information Density:** Grid mode uses ultra-compact badges (`text-[9px]`, Bold, Uppercase) for Mastery and Part of Speech to maximize data without clutter. Clicking a word opens a detailed Flashcard modal over a blurred background.
+
+---
+
+## II. GLOBAL VISUAL CONSTANTS
+
+### 1. Color Palette
+*   **Primary:** Indigo-600 (#4f46e5) - Used for primary actions, branding, and progress.
+*   **Success/Growth:** Green-600 - Used for correct answers and "Mastered" states.
+*   **Warning/Urgency:** Red-600 - Used for incorrect answers and antonyms.
+*   **Achievement:** Amber-500 / Yellow-500 - Used for streaks and XP milestones.
+*   **Neutrals:** Pure White (#ffffff) for surfaces, Gray-50 for backgrounds, Gray-100 for borders.
+
+### 2. Mastery Badge Logic
+Every word throughout the app is tagged with its mastery state using a specific micro-badge system:
+*   **Mastered:** `bg-green-100 text-green-700`
+*   **Learned:** `bg-blue-100 text-blue-700`
+*   **Familiar:** `bg-indigo-100 text-indigo-700`
+*   **Seen:** `bg-orange-100 text-orange-700`
+*   **Unseen:** `bg-gray-100 text-gray-500`
+
+### 3. Shapes & Textures
+*   **Corners:** "Hyper-rounded" strategy. `rounded-2xl` is the standard for cards; `rounded-3xl` for large containers; `rounded-full` for buttons.
+*   **Borders:** Hairline thickness (`border-gray-100`) to maintain a modern, "unboxed" look.
+*   **Depth:** Multi-layered shadows (`shadow-sm` to `shadow-2xl`) and backdrop-blur for a sense of physical layering.
+
+### 4. Interactive Feel
+*   **Springs, not Eases:** Most animations use spring physics (stiffness: 300, damping: 30) rather than linear eases, making the UI feel "snappy" and responsive.
+*   **Presence:** Uses `AnimatePresence` for all modal and view transitions to ensure elements slide or fade out smoothly rather than vanishing instantly.
+
+### 5. Loading & Error States
+*   **Loading:** Consistent use of the Lucide `Loader2` icon with `animate-spin` in `text-indigo-600`, often centered vertically to prevent layout shift during data fetching.
+*   **Errors/Empty States:** Graceful degradation using `AlertCircle` icons and tinted boxes (e.g., `bg-red-50 border-red-100` for errors, `bg-amber-50` for missing data) to communicate issues clearly without breaking the UI aesthetics.
